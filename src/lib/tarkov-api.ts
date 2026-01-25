@@ -6,7 +6,8 @@ export interface Item {
   id: string;
   name: string;
   shortName: string;
-  image512pxLink: string;
+  image512pxLink?: string;
+  iconLink?: string;
 }
 
 export interface TaskObjective {
@@ -53,6 +54,7 @@ const GET_TASKS_QUERY = gql`
             name
             shortName
             image512pxLink
+            iconLink
           }
           count
           foundInRaid
@@ -75,6 +77,7 @@ const GET_HIDEOUT_QUERY = gql`
             name
             shortName
             image512pxLink
+            iconLink
           }
           count
         }

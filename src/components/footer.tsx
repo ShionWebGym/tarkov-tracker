@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getItemsByIds } from '@/lib/tarkov-api'
+import { getItemsByIds, Item } from '@/lib/tarkov-api'
 import { useLanguage } from '@/context/language-context'
 import {
   Tooltip,
@@ -9,12 +9,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-
-interface DonationItem {
-  id: string
-  name: string
-  iconLink: string
-}
 
 const donationItemIds = [
   '57347d7224597744596b4e72', // Tushonka (Small)
@@ -30,14 +24,16 @@ const donationLinks: Record<string, { url: string; text: string }> = {
 
 export function Footer() {
   const { language } = useLanguage()
-  const [items, setItems] = useState<DonationItem[]>([])
+  const [items, setItems] = useState<Item[]>([])
 
   useEffect(() => {
     async function fetchItems() {
       const fetchedItems = await getItemsByIds(donationItemIds, language)
-      // Sort items to match the order of donationItemIds
-      const sortedItems = donationItemIds.map(id => fetchedItems.find(item => item.id === id)).filter(Boolean) as DonationItem[]
-      setItems(sortedItems)
+      // Sort items to match the order of donationItemIds and ensure they have an iconLink
+      const sortedAndFiltered = donationItemIds
+        .map(id => fetchedItems.find(item => item.id === id))
+        .filter((item): item is Item & { iconLink: string } => !!item && !!item.iconLink);
+      setItems(sortedAndFiltered)
     }
     fetchItems()
   }, [language])
