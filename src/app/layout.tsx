@@ -17,6 +17,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Loot Lens",
   description: "Track your Escape from Tarkov item requirements for quests and hideout with Loot Lens.",
+  openGraph: {
+    title: "Loot Lens",
+    description: "Track your Escape from Tarkov item requirements for quests and hideout with Loot Lens.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Loot Lens",
+    description: "Track your Escape from Tarkov item requirements for quests and hideout with Loot Lens.",
+  },
 };
 
 export default function RootLayout({
