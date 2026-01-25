@@ -106,7 +106,10 @@ export function useTarkovData(
           if (!itemMap.has(itemId)) {
             itemMap.set(itemId, {
               id: itemId,
-              item: obj.item,
+              item: {
+                ...obj.item,
+                image512pxLink: obj.item.image512pxLink || "",
+              },
               totalCount: 0,
               requirements: []
             });
@@ -119,7 +122,7 @@ export function useTarkovData(
             id: obj.item.id,
             name: obj.item.name,
             shortName: obj.item.shortName,
-            image512pxLink: obj.item.image512pxLink,
+            image512pxLink: obj.item.image512pxLink || "",
             count: obj.count,
             sourceType: 'task',
             sourceName: `${task.trader.name} - ${task.name} (${obj.type})`,
@@ -141,7 +144,10 @@ export function useTarkovData(
             if (!itemMap.has(itemId)) {
               itemMap.set(itemId, {
                 id: itemId,
-                item: req.item,
+                item: {
+                  ...req.item,
+                  image512pxLink: req.item.image512pxLink || "",
+                },
                 totalCount: 0,
                 requirements: []
               });
@@ -153,7 +159,7 @@ export function useTarkovData(
               id: req.item.id,
               name: req.item.name,
               shortName: req.item.shortName,
-              image512pxLink: req.item.image512pxLink,
+              image512pxLink: req.item.image512pxLink || "",
               count: req.count,
               sourceType: 'hideout',
               sourceName: `${station.name} Level ${level.level}`,
