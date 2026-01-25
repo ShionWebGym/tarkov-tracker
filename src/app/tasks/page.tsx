@@ -109,18 +109,20 @@ export default function TasksPage() {
                          
                          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                              {selectedTrader && tasksByTrader[selectedTrader]?.map((task) => (
-                                <div key={task.id} className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-all duration-200 group">
+                                <div 
+                                    key={task.id}
+                                    onClick={() => toggleTask(task.id, !completedTaskIds.has(task.id))}
+                                    className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-all duration-200 group cursor-pointer"
+                                >
                                     <Checkbox 
                                         id={task.id} 
                                         checked={completedTaskIds.has(task.id)}
-                                        onCheckedChange={(checked) => toggleTask(task.id, checked as boolean)}
-                                        className="mt-1 group-hover:border-primary"
+                                        className="mt-1 group-hover:border-primary pointer-events-none"
                                     />
                                     <div className="grid gap-1.5 leading-none w-full">
                                         <div className="flex justify-between items-start gap-2">
                                             <Label 
-                                                htmlFor={task.id}
-                                                className={`text-base font-medium cursor-pointer transition-colors ${completedTaskIds.has(task.id) ? "line-through text-muted-foreground" : "group-hover:text-primary"}`}
+                                                className={`text-base font-medium transition-colors ${completedTaskIds.has(task.id) ? "line-through text-muted-foreground" : "group-hover:text-primary"}`}
                                             >
                                                 {task.name}
                                             </Label>

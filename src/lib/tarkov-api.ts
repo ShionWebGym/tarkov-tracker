@@ -108,3 +108,24 @@ export async function getHideoutStations(lang: string = 'en'): Promise<HideoutSt
     return [];
   }
 }
+
+const GET_ITEMS_BY_IDS_QUERY = gql`
+  query GetItemsByIds($ids: [ID!]!, $lang: LanguageCode) {
+    items(ids: $ids, lang: $lang) {
+      id
+      name
+      shortName
+      iconLink
+    }
+  }
+`;
+
+export async function getItemsByIds(ids: string[], lang: string = 'en'): Promise<Item[]> {
+  try {
+    const data = await request<{ items: Item[] }>(API_ENDPOINT, GET_ITEMS_BY_IDS_QUERY, { ids, lang });
+    return data.items;
+  } catch (error) {
+    console.error('Error fetching items by IDs:', error);
+    return [];
+  }
+}
