@@ -1,0 +1,112 @@
+'use client'
+
+import { useTarkovData } from "@/hooks/use-tarkov-data"
+import { ItemCard } from "@/components/item-card"
+import { Loader2, ArrowUpDown } from "lucide-react"
+import { Navbar } from "@/components/navbar"
+import { useUserProgress } from "@/context/user-progress-context"
+import { useLanguage } from "@/context/language-context"
+import { useState, useMemo } from "react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+type SortOption = 'total-desc' | 'total-asc' | 'name-asc' | 'name-desc';
+
+export default function Dashboard() {
+  const { completedTaskIds, completedHideoutLevels } = useUserProgress()
+  const { language, t } = useLanguage()
+  const { aggregatedItems, isLoading, error } = useTarkovData(language, completedTaskIds, completedHideoutLevels)
+  const [sortBy, setSortBy] = useState<SortOption>('total-desc')
+
+  const sortedItems = useMemo(() => {
+    if (!aggregatedItems) return [];
+    
+    return [...aggregatedItems].sort((a, b) => {
+      switch (sortBy) {
+        case 'total-desc':
+          return b.totalCount - a.totalCount;
+        case 'total-asc':
+          return a.totalCount - b.totalCount;
+        case 'name-asc':
+          return a.item.name.localeCompare(b.item.name, language === 'ja' ? 'ja' : 'en');
+        case 'name-desc':
+          return b.item.name.localeCompare(a.item.name, language === 'ja' ? 'ja' : 'en');
+        default:
+          return 0;
+      }
+    });
+  }, [aggregatedItems, sortBy, language]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <div className="flex h-[50vh] w-full items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 font-medium animate-pulse">{t('loadingData')}</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <div className="flex h-[50vh] w-full items-center justify-center text-destructive">
+          {t('errorLoading')}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen bg-muted/20">
+      <Navbar />
+      <main className="container mx-auto max-w-7xl py-8 space-y-8 px-4 sm:px-6">
+        <div className="flex flex-col items-center text-center space-y-4">
+            <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              {t('dashboard')}
+            </h1>
+            <p className="text-muted-foreground max-w-2xl text-lg">
+              {t('totalItemsNeeded')}
+            </p>
+            
+             <div className="flex items-center gap-2 pt-4">
+                <Select value={sortBy} onValueChange={(val) => setSortBy(val as SortOption)}>
+                <SelectTrigger className="w-[180px]">
+                    <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="total-desc">Count (High to Low)</SelectItem>
+                    <SelectItem value="total-asc">Count (Low to High)</SelectItem>
+                    <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                    <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                </SelectContent>
+                </Select>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 place-content-center">
+          {sortedItems.map((item) => (
+            <ItemCard key={item.id} item={item} />
+          ))}
+        </div>
+        
+        {sortedItems.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 rounded-lg border-2 border-dashed border-muted mx-auto max-w-2xl">
+                <div className="text-4xl">🎉</div>
+                <h3 className="text-xl font-semibold">{t('noItemsNeeded')}</h3>
+                <p className="text-muted-foreground">Good luck in the raid!</p>
+            </div>
+        )}
+      </main>
+    </div>
+  )
+}
