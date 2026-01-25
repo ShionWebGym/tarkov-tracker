@@ -50,85 +50,48 @@ export function useTarkovData(
 
   const itemMap = new Map<string, AggregatedItem>();
 
-  if (tasksQuery.data && hideoutQuery.data) {
-    // Process Tasks
-    tasksQuery.data.forEach(task => {
+  // Filter tasks and their objectives to ONLY include 'giveItem' requirements.
+  // This is the definitive fix based on the user's final clarification.
+  const relevantTasks = tasksQuery.data
+    ?.map(task => ({
+      ...task,
+      objectives: task.objectives.filter(obj => obj.type === 'giveItem' && obj.item && obj.count && obj.count > 0)
+    }))
+    .filter(task => task.objectives.length > 0) || [];
+
+  if (relevantTasks && hideoutQuery.data) {
+    // Process Tasks from the cleaned list
+    relevantTasks.forEach(task => {
       const isCompleted = completedTaskIds.has(task.id);
       if (!includeCompleted && isCompleted) return;
 
-      // Filter out 'findItem' if 'giveItem' exists for the same item to avoid double counting
-      // Also handle cases where there are multiple 'plantItem' objectives
-      const uniqueObjectives = task.objectives.reduce((acc, obj) => {
-        if (!obj.item || !obj.count) return acc;
-        
-        const existingIndex = acc.findIndex(o => o.item!.id === obj.item!.id);
-        if (existingIndex !== -1) {
-            // Priority: giveItem > findItem > plantItem
-            // If we have a 'giveItem' and the existing one is 'findItem', replace it.
-            // If we have 'findItem' and existing is 'giveItem', ignore 'findItem'.
-            // If we have multiple 'plantItem', we might want to keep all of them or sum them? 
-            // Based on logs: "plantItem, plantItem" usually means multiple spots.
-            
-            const existing = acc[existingIndex];
-            
-            // Case 1: Handle Find/Give pair (usually "Find in raid" + "Hand over")
-            if (
-                (obj.type === 'giveItem' && existing.type === 'findItem') ||
-                (obj.type === 'findItem' && existing.type === 'giveItem')
-            ) {
-                 // Keep 'giveItem' as the requirement usually implies finding it too, or just handing over found ones.
-                 // The 'count' should be the same usually. We take the 'giveItem' one.
-                 if (obj.type === 'giveItem') {
-                     acc[existingIndex] = obj;
-                 }
-                 return acc;
-            }
-
-            // Case 2: Multiple plantItem or other combinations that are distinct requirements
-            // e.g., "plantItem" x 3 often means 3 different items or same item 3 times?
-            // The log shows: "Task: Informed Means Armed has multiple objectives for item 5b4391a586f7745321235ab2: plantItem, plantItem, plantItem"
-            // If it's the same item ID, we should probably SUM them if they are distinct actions (like planting in 3 spots).
-            // However, the dashboard logic simply pushes requirements. 
-            // If we push multiple requirements for the same item from the same task, it shows up as multiple lines in "Item Details".
-            // But for "Total Count", we need to be careful.
-            
-            // For now, let's just push it as a separate objective if it's NOT the Find/Give pair.
-            acc.push(obj);
-        } else {
-            acc.push(obj);
-        }
-        return acc;
-      }, [] as typeof task.objectives);
-
-      uniqueObjectives.forEach(obj => {
-        if (obj.item && obj.count) {
-          const itemId = obj.item.id;
-          if (!itemMap.has(itemId)) {
-            itemMap.set(itemId, {
-              id: itemId,
-              item: {
-                ...obj.item,
-                image512pxLink: obj.item.image512pxLink || "",
-              },
-              totalCount: 0,
-              requirements: []
-            });
-          }
-          const entry = itemMap.get(itemId)!;
-          
-          entry.totalCount += obj.count;
-          
-          entry.requirements.push({
-            id: obj.item.id,
-            name: obj.item.name,
-            shortName: obj.item.shortName,
-            image512pxLink: obj.item.image512pxLink || "",
-            count: obj.count,
-            sourceType: 'task',
-            sourceName: `${task.trader.name} - ${task.name} (${obj.type})`,
-            taskId: task.id
+      task.objectives.forEach(obj => {
+        const itemId = obj.item!.id;
+        if (!itemMap.has(itemId)) {
+          itemMap.set(itemId, {
+            id: itemId,
+            item: {
+              ...obj.item!,
+              image512pxLink: obj.item!.image512pxLink || "",
+            },
+            totalCount: 0,
+            requirements: []
           });
         }
+        const entry = itemMap.get(itemId)!;
+        
+        entry.totalCount += obj.count!;
+        
+        entry.requirements.push({
+          id: obj.item!.id,
+          name: obj.item!.name,
+          shortName: obj.item!.shortName,
+          image512pxLink: obj.item!.image512pxLink || "",
+          count: obj.count!,
+          sourceType: 'task',
+          sourceName: `${task.trader.name} - ${task.name}`,
+          taskId: task.id
+        });
       });
     });
 
@@ -172,7 +135,7 @@ export function useTarkovData(
   }
 
   return {
-    tasks: tasksQuery.data,
+    tasks: relevantTasks, // Return the filtered list of tasks
     hideout: hideoutQuery.data,
     aggregatedItems: Array.from(itemMap.values()).sort((a, b) => b.totalCount - a.totalCount),
     isLoading,
