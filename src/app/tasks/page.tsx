@@ -130,21 +130,26 @@ export default function TasksPage() {
                                         
                                         <div className="text-sm text-muted-foreground space-y-1 mt-1 bg-muted/30 p-2 rounded-md">
                                             {(() => {
-                                                const aggregatedObjectives = new Map<string, any>();
+                                                const aggregatedObjectives = new Map<string, typeof task.objectives[0]>();
                                                 task.objectives
-                                                    .filter(obj => (obj.type === 'giveItem' || obj.type === 'findItem') && obj.item)
+                                                    .filter(obj => obj.type === 'giveItem' && obj.item && obj.count)
                                                     .forEach(obj => {
                                                         if (aggregatedObjectives.has(obj.item!.id)) {
-                                                            aggregatedObjectives.get(obj.item!.id).count += obj.count;
+                                                            const entry = aggregatedObjectives.get(obj.item!.id)!;
+                                                            entry.count = (entry.count || 0) + obj.count!;
                                                         } else {
                                                             aggregatedObjectives.set(obj.item!.id, { ...obj });
                                                         }
                                                     });
                                                 
+                                                if (aggregatedObjectives.size === 0) {
+                                                    return <span className="text-xs italic text-muted-foreground">No item handover required</span>;
+                                                }
+
                                                 return Array.from(aggregatedObjectives.values()).map(obj => (
-                                                    <div key={obj.item.id} className="flex items-center gap-2">
+                                                    <div key={obj.item!.id} className="flex items-center gap-2">
                                                         <span className={`h-1.5 w-1.5 rounded-full ${completedTaskIds.has(task.id) ? "bg-muted-foreground" : "bg-primary"}`} />
-                                                        <span>{obj.item.name} <span className="font-mono text-xs opacity-80">x{obj.count}</span></span>
+                                                        <span>{obj.item!.name} <span className="font-mono text-xs opacity-80">x{obj.count}</span></span>
                                                     </div>
                                                 ));
                                             })()}

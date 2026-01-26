@@ -6,7 +6,7 @@ import { Loader2, ArrowUpDown } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { useUserProgress } from "@/context/user-progress-context"
 import { useLanguage } from "@/context/language-context"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -23,6 +23,20 @@ export default function Dashboard() {
   const { language, t } = useLanguage()
   const { aggregatedItems, isLoading, error } = useTarkovData(language, completedTaskIds, completedHideoutLevels)
   const [sortBy, setSortBy] = useState<SortOption>('total-desc')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('dashboardSortBy') as SortOption
+    if (saved) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSortBy(saved)
+    }
+  }, [])
+
+  const handleSortChange = (val: string) => {
+    const newSort = val as SortOption;
+    setSortBy(newSort);
+    localStorage.setItem('dashboardSortBy', newSort);
+  }
 
   const sortedItems = useMemo(() => {
     if (!aggregatedItems) return [];
@@ -87,7 +101,7 @@ export default function Dashboard() {
             </div>
             
              <div className="flex items-center gap-2 pt-4">
-                <Select value={sortBy} onValueChange={(val) => setSortBy(val as SortOption)}>
+                <Select value={sortBy} onValueChange={handleSortChange}>
                 <SelectTrigger className="w-[180px]">
                     <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="Sort by" />
