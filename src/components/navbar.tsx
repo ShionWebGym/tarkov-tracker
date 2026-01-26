@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Menu, X } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { Footer } from "@/components/footer"
 
 export function Navbar() {
   const pathname = usePathname()
@@ -148,10 +149,8 @@ export function Navbar() {
             </Link>
         </nav>
 
-        <div className="mt-auto pt-8 border-t">
-            <p className="text-xs text-muted-foreground text-center">
-                © 2024 Loot Lens
-            </p>
+        <div className="mt-auto">
+            <Footer className="mt-0 border-t-0" minimal />
         </div>
       </div>
     </>
