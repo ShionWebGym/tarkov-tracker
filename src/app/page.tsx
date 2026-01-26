@@ -6,7 +6,7 @@ import { Loader2, ArrowUpDown } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { useUserProgress } from "@/context/user-progress-context"
 import { useLanguage } from "@/context/language-context"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -23,6 +23,20 @@ export default function Dashboard() {
   const { language, t } = useLanguage()
   const { aggregatedItems, isLoading, error } = useTarkovData(language, completedTaskIds, completedHideoutLevels)
   const [sortBy, setSortBy] = useState<SortOption>('total-desc')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('dashboardSortBy') as SortOption
+    if (saved) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSortBy(saved)
+    }
+  }, [])
+
+  const handleSortChange = (val: string) => {
+    const newSort = val as SortOption;
+    setSortBy(newSort);
+    localStorage.setItem('dashboardSortBy', newSort);
+  }
 
   const sortedItems = useMemo(() => {
     if (!aggregatedItems) return [];
@@ -77,17 +91,17 @@ export default function Dashboard() {
             <p className="text-muted-foreground max-w-2xl text-lg">
               {t('totalItemsNeeded')}
             </p>
-            <div className="flex flex-col gap-2 pt-2 text-center">
-                <Badge variant="destructive" className="text-xs font-normal whitespace-nowrap">
+            <div className="flex flex-col gap-2 pt-2 text-center max-w-full">
+                <Badge variant="destructive" className="text-xs font-normal whitespace-normal text-left sm:text-center mx-auto max-w-full leading-relaxed">
                     ※データはブラウザに保存されます。キャッシュを削除すると進捗がリセットされるためご注意ください。
                 </Badge>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground px-4">
                     ※当サイトのデータはTarkov.dev APIを利用しており、実際の内容と異なる場合があります。
                 </p>
             </div>
             
              <div className="flex items-center gap-2 pt-4">
-                <Select value={sortBy} onValueChange={(val) => setSortBy(val as SortOption)}>
+                <Select value={sortBy} onValueChange={handleSortChange}>
                 <SelectTrigger className="w-[180px]">
                     <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="Sort by" />

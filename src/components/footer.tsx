@@ -22,7 +22,12 @@ const donationLinks: Record<string, { url: string; text: string }> = {
   '5751a89d24597722aa0e8db0': { url: 'https://buymeacoffee.com/noobmqster/e/502962', text: 'Buy Dev a Golden Star' },
 }
 
-export function Footer() {
+interface FooterProps {
+  className?: string;
+  minimal?: boolean;
+}
+
+export function Footer({ className, minimal = false }: FooterProps) {
   const { language } = useLanguage()
   const [items, setItems] = useState<Item[]>([])
 
@@ -39,26 +44,29 @@ export function Footer() {
   }, [language])
 
   return (
-    <footer className="w-full border-t border-border/40 mt-12 py-6">
+    <footer className={`w-full border-t border-border/40 py-6 ${className || 'mt-12'}`}>
       <div className="container mx-auto flex flex-col items-center justify-center gap-4 text-center">
-        <div className="flex items-center gap-3">
-          <TooltipProvider>
-            {items.map((item) => (
-              <Tooltip key={item.id}>
-                <TooltipTrigger asChild>
-                  <a href={donationLinks[item.id].url} target="_blank" rel="noopener noreferrer" className="grayscale hover:grayscale-0 transition-all duration-200">
-                    <img src={item.iconLink} alt={item.name} className="h-8 w-8" />
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{donationLinks[item.id].text}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </TooltipProvider>
-        </div>
+        {!minimal && (
+            <div className="flex items-center gap-3">
+            <TooltipProvider>
+                {items.map((item) => (
+                <Tooltip key={item.id}>
+                    <TooltipTrigger asChild>
+                    <a href={donationLinks[item.id].url} target="_blank" rel="noopener noreferrer" className="grayscale hover:grayscale-0 transition-all duration-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={item.iconLink} alt={item.name} className="h-8 w-8" />
+                    </a>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                    <p>{donationLinks[item.id].text}</p>
+                    </TooltipContent>
+                </Tooltip>
+                ))}
+            </TooltipProvider>
+            </div>
+        )}
         <div className="text-xs text-muted-foreground space-y-2">
-          <p>&copy; {new Date().getFullYear()} Loot Lens. All rights reserved.</p>
+          <p>&copy; 2026 Loot Lens. All rights reserved.</p>
           <p>
             Escape from Tarkov and all related logos and imagery are trademarks of Battlestate Games. This site is unofficial and not affiliated with Battlestate Games.
           </p>

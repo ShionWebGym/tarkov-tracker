@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface UserProgressContextType {
   completedTaskIds: Set<string>;
@@ -14,48 +14,77 @@ const UserProgressContext = createContext<UserProgressContextType | undefined>(u
 export function UserProgressProvider({ children }: { children: React.ReactNode }) {
   const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(new Set());
   const [completedHideoutLevels, setCompletedHideoutLevels] = useState<Set<string>>(new Set());
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  const loadFromLocalStorage = useCallback(() => {
+  // Load from local storage on mount
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
         const tasks = localStorage.getItem('completedTasks');
         const hideout = localStorage.getItem('completedHideout');
-        if (tasks) setCompletedTaskIds(new Set(JSON.parse(tasks)));
-        else setCompletedTaskIds(new Set()); 
         
-        if (hideout) setCompletedHideoutLevels(new Set(JSON.parse(hideout)));
-        else setCompletedHideoutLevels(new Set());
+        if (tasks) {
+            setCompletedTaskIds(new Set(JSON.parse(tasks)));
+        }
+
+        if (hideout) {
+            setCompletedHideoutLevels(new Set(JSON.parse(hideout)));
+        }
       } catch (e) {
         console.error("Failed to load progress from local storage", e);
+      } finally {
+        setIsLoaded(true);
       }
+    } else {
+        setIsLoaded(true);
     }
   }, []);
 
+  // Save to local storage whenever state changes
   useEffect(() => {
-    loadFromLocalStorage();
-  }, [loadFromLocalStorage]);
+    if (!isLoaded) return;
+    localStorage.setItem('completedTasks', JSON.stringify(Array.from(completedTaskIds)));
+  }, [completedTaskIds, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    localStorage.setItem('completedHideout', JSON.stringify(Array.from(completedHideoutLevels)));
+  }, [completedHideoutLevels, isLoaded]);
 
   const toggleTask = (taskId: string, completed: boolean) => {
-    const newSet = new Set(completedTaskIds);
-    if (completed) {
-      newSet.add(taskId);
-    } else {
-      newSet.delete(taskId);
-    }
-    setCompletedTaskIds(newSet);
-    localStorage.setItem('completedTasks', JSON.stringify(Array.from(newSet)));
+    setCompletedTaskIds(prev => {
+        const newSet = new Set(prev);
+        if (completed) {
+            newSet.add(taskId);
+        } else {
+            newSet.delete(taskId);
+        }
+        return newSet;
+    });
   };
 
   const toggleHideout = (stationId: string, level: number, completed: boolean) => {
-    const key = `${stationId}-${level}`;
-    const newSet = new Set(completedHideoutLevels);
-    if (completed) {
-      newSet.add(key);
-    } else {
-      newSet.delete(key);
-    }
-    setCompletedHideoutLevels(newSet);
-    localStorage.setItem('completedHideout', JSON.stringify(Array.from(newSet)));
+    setCompletedHideoutLevels(prev => {
+        const newSet = new Set(prev);
+
+        if (completed) {
+            // Check current level and all previous levels (1 to level)
+            for (let l = 1; l <= level; l++) {
+                newSet.add(`${stationId}-${l}`);
+            }
+        } else {
+            // Uncheck current level and all higher levels
+            const stationLevels = Array.from(newSet).filter(key => key.startsWith(`${stationId}-`));
+            for (const key of stationLevels) {
+                const levelStr = key.substring(stationId.length + 1);
+                const l = parseInt(levelStr, 10);
+                if (!isNaN(l) && l >= level) {
+                    newSet.delete(key);
+                }
+            }
+        }
+        return newSet;
+    });
   };
 
   return (

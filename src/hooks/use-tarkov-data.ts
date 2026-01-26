@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getTasks, getHideoutStations } from '@/lib/tarkov-api';
 
@@ -18,7 +19,7 @@ export interface ItemRequirement {
 export interface AggregatedItem {
   id: string;
   item: {
-    id: string;
+    id:string;
     name: string;
     shortName: string;
     image512pxLink: string;
@@ -48,76 +49,62 @@ export function useTarkovData(
   const isLoading = tasksQuery.isLoading || hideoutQuery.isLoading;
   const error = tasksQuery.error || hideoutQuery.error;
 
-  const itemMap = new Map<string, AggregatedItem>();
+  const { aggregatedItems, relevantTasks } = useMemo(() => {
+    const itemMap = new Map<string, AggregatedItem>();
 
-  // Filter tasks and their objectives to ONLY include 'giveItem' requirements.
-  // This is the definitive fix based on the user's final clarification.
-  const relevantTasks = tasksQuery.data
-    ?.map(task => ({
-      ...task,
-      objectives: task.objectives.filter(obj => obj.type === 'giveItem' && obj.item && obj.count && obj.count > 0)
-    }))
-    .filter(task => task.objectives.length > 0) || [];
+    const relevantTasks = tasksQuery.data
+      ?.map(task => ({
+        ...task,
+        objectives: task.objectives.filter(obj => obj.type === 'giveItem' && obj.item && obj.count && obj.count > 0)
+      }))
+      .filter(task => task.objectives.length > 0) || [];
 
-  if (relevantTasks && hideoutQuery.data) {
-    // Process Tasks from the cleaned list
-    relevantTasks.forEach(task => {
-      const isCompleted = completedTaskIds.has(task.id);
-      if (!includeCompleted && isCompleted) return;
-
-      task.objectives.forEach(obj => {
-        const itemId = obj.item!.id;
-        if (!itemMap.has(itemId)) {
-          itemMap.set(itemId, {
-            id: itemId,
-            item: {
-              ...obj.item!,
-              image512pxLink: obj.item!.image512pxLink || "",
-            },
-            totalCount: 0,
-            requirements: []
+    if (relevantTasks && hideoutQuery.data) {
+      // ... processing logic
+      relevantTasks.forEach(task => {
+        // ...
+        const isCompleted = completedTaskIds.has(task.id);
+        if (!includeCompleted && isCompleted) return;
+        task.objectives.forEach(obj => {
+          const itemId = obj.item!.id;
+          if (!itemMap.has(itemId)) {
+            itemMap.set(itemId, {
+              id: itemId,
+              item: { ...obj.item!, image512pxLink: obj.item!.image512pxLink || "" },
+              totalCount: 0,
+              requirements: []
+            });
+          }
+          const entry = itemMap.get(itemId)!;
+          entry.requirements.push({
+            id: obj.item!.id,
+            name: obj.item!.name,
+            shortName: obj.item!.shortName,
+            image512pxLink: obj.item!.image512pxLink || "",
+            count: obj.count!,
+            sourceType: 'task',
+            sourceName: `${task.trader.name} - ${task.name}`,
+            taskId: task.id
           });
-        }
-        const entry = itemMap.get(itemId)!;
-        
-        entry.totalCount += obj.count!;
-        
-        entry.requirements.push({
-          id: obj.item!.id,
-          name: obj.item!.name,
-          shortName: obj.item!.shortName,
-          image512pxLink: obj.item!.image512pxLink || "",
-          count: obj.count!,
-          sourceType: 'task',
-          sourceName: `${task.trader.name} - ${task.name}`,
-          taskId: task.id
         });
       });
-    });
 
-    // Process Hideout
-    hideoutQuery.data.forEach(station => {
-      station.levels.forEach(level => {
-        const levelKey = `${station.id}-${level.level}`;
-        const isCompleted = completedHideoutLevels.has(levelKey);
-        if (!includeCompleted && isCompleted) return;
-
-        level.itemRequirements.forEach(req => {
+      hideoutQuery.data.forEach(station => {
+        station.levels.forEach(level => {
+          const levelKey = `${station.id}-${level.level}`;
+          const isCompleted = completedHideoutLevels.has(levelKey);
+          if (!includeCompleted && isCompleted) return;
+          level.itemRequirements.forEach(req => {
             const itemId = req.item.id;
             if (!itemMap.has(itemId)) {
               itemMap.set(itemId, {
                 id: itemId,
-                item: {
-                  ...req.item,
-                  image512pxLink: req.item.image512pxLink || "",
-                },
+                item: { ...req.item, image512pxLink: req.item.image512pxLink || "" },
                 totalCount: 0,
                 requirements: []
               });
             }
             const entry = itemMap.get(itemId)!;
-            entry.totalCount += req.count;
-            
             entry.requirements.push({
               id: req.item.id,
               name: req.item.name,
@@ -129,15 +116,23 @@ export function useTarkovData(
               stationId: station.id,
               level: level.level
             });
+          });
         });
       });
-    });
-  }
+
+      itemMap.forEach(entry => {
+        entry.totalCount = entry.requirements.reduce((sum, req) => sum + req.count, 0);
+      });
+    }
+
+    const aggregatedItems = Array.from(itemMap.values()).sort((a, b) => b.totalCount - a.totalCount);
+    return { aggregatedItems, relevantTasks };
+  }, [tasksQuery.data, hideoutQuery.data, completedTaskIds, completedHideoutLevels, includeCompleted]);
 
   return {
-    tasks: relevantTasks, // Return the filtered list of tasks
+    tasks: relevantTasks,
     hideout: hideoutQuery.data,
-    aggregatedItems: Array.from(itemMap.values()).sort((a, b) => b.totalCount - a.totalCount),
+    aggregatedItems,
     isLoading,
     error
   };
