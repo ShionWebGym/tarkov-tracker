@@ -51,7 +51,6 @@ export function useTarkovData(
   const itemMap = new Map<string, AggregatedItem>();
 
   // Filter tasks and their objectives to ONLY include 'giveItem' requirements.
-  // This is the definitive fix based on the user's final clarification.
   const relevantTasks = tasksQuery.data
     ?.map(task => ({
       ...task,
@@ -62,6 +61,7 @@ export function useTarkovData(
   if (relevantTasks && hideoutQuery.data) {
     // Process Tasks from the cleaned list
     relevantTasks.forEach(task => {
+      // Check completion based on includeCompleted flag
       const isCompleted = completedTaskIds.has(task.id);
       if (!includeCompleted && isCompleted) return;
 
@@ -80,18 +80,25 @@ export function useTarkovData(
         }
         const entry = itemMap.get(itemId)!;
         
-        entry.totalCount += obj.count!;
-        
-        entry.requirements.push({
-          id: obj.item!.id,
-          name: obj.item!.name,
-          shortName: obj.item!.shortName,
-          image512pxLink: obj.item!.image512pxLink || "",
-          count: obj.count!,
-          sourceType: 'task',
-          sourceName: `${task.trader.name} - ${task.name}`,
-          taskId: task.id
-        });
+        // Check for existing requirement to merge (Deduplication Logic)
+        const existingReq = entry.requirements.find(r =>
+            r.sourceType === 'task' && r.taskId === task.id
+        );
+
+        if (existingReq) {
+            existingReq.count += obj.count!;
+        } else {
+            entry.requirements.push({
+              id: obj.item!.id,
+              name: obj.item!.name,
+              shortName: obj.item!.shortName,
+              image512pxLink: obj.item!.image512pxLink || "",
+              count: obj.count!,
+              sourceType: 'task',
+              sourceName: `${task.trader.name} - ${task.name}`,
+              taskId: task.id
+            });
+        }
       });
     });
 
@@ -116,21 +123,37 @@ export function useTarkovData(
               });
             }
             const entry = itemMap.get(itemId)!;
-            entry.totalCount += req.count;
-            
-            entry.requirements.push({
-              id: req.item.id,
-              name: req.item.name,
-              shortName: req.item.shortName,
-              image512pxLink: req.item.image512pxLink || "",
-              count: req.count,
-              sourceType: 'hideout',
-              sourceName: `${station.name} Level ${level.level}`,
-              stationId: station.id,
-              level: level.level
-            });
+
+            // Check for existing requirement to merge (Deduplication Logic)
+            const existingReq = entry.requirements.find(r =>
+                r.sourceType === 'hideout' &&
+                r.stationId === station.id &&
+                r.level === level.level
+            );
+
+            if (existingReq) {
+                existingReq.count += req.count;
+            } else {
+                entry.requirements.push({
+                  id: req.item.id,
+                  name: req.item.name,
+                  shortName: req.item.shortName,
+                  image512pxLink: req.item.image512pxLink || "",
+                  count: req.count,
+                  sourceType: 'hideout',
+                  sourceName: `${station.name} Level ${level.level}`,
+                  stationId: station.id,
+                  level: level.level
+                });
+            }
         });
       });
+    });
+
+    // Recalculate totalCount based on merged requirements
+    // This ensures that totalCount matches exactly what the user sees in the requirements list.
+    itemMap.forEach(entry => {
+        entry.totalCount = entry.requirements.reduce((sum, req) => sum + req.count, 0);
     });
   }
 

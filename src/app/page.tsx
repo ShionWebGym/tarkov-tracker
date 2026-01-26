@@ -91,11 +91,11 @@ export default function Dashboard() {
             <p className="text-muted-foreground max-w-2xl text-lg">
               {t('totalItemsNeeded')}
             </p>
-            <div className="flex flex-col gap-2 pt-2 text-center">
-                <Badge variant="destructive" className="text-xs font-normal whitespace-nowrap">
+            <div className="flex flex-col gap-2 pt-2 text-center max-w-full">
+                <Badge variant="destructive" className="text-xs font-normal whitespace-normal text-left sm:text-center mx-auto max-w-full leading-relaxed">
                     ※データはブラウザに保存されます。キャッシュを削除すると進捗がリセットされるためご注意ください。
                 </Badge>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground px-4">
                     ※当サイトのデータはTarkov.dev APIを利用しており、実際の内容と異なる場合があります。
                 </p>
             </div>

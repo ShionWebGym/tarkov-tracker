@@ -119,16 +119,16 @@ export default function TasksPage() {
                                         checked={completedTaskIds.has(task.id)}
                                         className="mt-1 group-hover:border-primary pointer-events-none"
                                     />
-                                    <div className="grid gap-1.5 leading-none w-full">
+                                    <div className="grid gap-1.5 leading-none w-full min-w-0">
                                         <div className="flex justify-between items-start gap-2">
                                             <Label 
-                                                className={`text-base font-medium transition-colors ${completedTaskIds.has(task.id) ? "line-through text-muted-foreground" : "group-hover:text-primary"}`}
+                                                className={`text-base font-medium transition-colors break-words leading-tight ${completedTaskIds.has(task.id) ? "line-through text-muted-foreground" : "group-hover:text-primary"}`}
                                             >
                                                 {task.name}
                                             </Label>
                                         </div>
                                         
-                                        <div className="text-sm text-muted-foreground space-y-1 mt-1 bg-muted/30 p-2 rounded-md">
+                                        <div className="text-sm text-muted-foreground space-y-1 mt-1 bg-muted/30 p-2 rounded-md overflow-hidden">
                                             {(() => {
                                                 const aggregatedObjectives = new Map<string, typeof task.objectives[0]>();
                                                 task.objectives
