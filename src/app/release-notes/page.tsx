@@ -5,12 +5,17 @@ import { useLanguage } from "@/context/language-context"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
+interface FeatureItem {
+  title: string;
+  description: string[];
+}
+
 interface ReleaseNote {
   date: string;
   version: string;
   features: {
-      en: string[];
-      ja: string[];
+      en: FeatureItem[];
+      ja: FeatureItem[];
   };
   fixes: {
       en: string[];
@@ -24,14 +29,48 @@ const releaseNotes: ReleaseNote[] = [
     version: "v1.1.0",
     features: {
         en: [
-            "Added Release Notes page",
-            "Implemented Hideout cascading checks",
-            "Overhauled mobile navigation",
+            {
+                title: "Implemented real-time search functionality",
+                description: [
+                    "You can now instantly filter and find your desired items from the item list.",
+                    "It supports both Japanese and English, so you'll get hits regardless of which language you input."
+                ]
+            },
+            {
+                title: "Item pinning feature",
+                description: [
+                    "You can now pin items that you want to prioritize collecting for tasks or your Hideout to the top of the list.",
+                    "This is perfect for quickly checking items you need during a raid."
+                ]
+            },
+            {
+                title: "Added release notes",
+                description: [
+                    "You can now review past update contents and revision history within the site."
+                ]
+            }
         ],
         ja: [
-            "リリースノートページを追加",
-            "ハイドアウトレベルの連動チェック機能を実装",
-            "モバイルナビゲーションを刷新",
+            {
+                title: "リアルタイム検索機能の実装",
+                description: [
+                    "アイテム一覧から目的のアイテムを即座に絞り込めるようになりました。",
+                    "日本語・英語の両方に対応しており、どちらの言語で入力してもヒットします。"
+                ]
+            },
+            {
+                title: "アイテムのピン留め機能",
+                description: [
+                    "タスクや隠れ家（Hideout）で最優先に集めたいアイテムを一覧の上部に固定できるようになりました。",
+                    "レイド中に必要なアイテムをひと目で確認するのに最適です。"
+                ]
+            },
+            {
+                title: "リリースノートの設置",
+                description: [
+                    "これまでのアップデート内容や修正履歴をサイト内で確認できるようになりました。"
+                ]
+            }
         ]
     },
     fixes: {
@@ -52,16 +91,16 @@ const releaseNotes: ReleaseNote[] = [
     version: "v1.0.0",
     features: {
         en: [
-            "Initial Release",
-            "Dashboard with item tracking",
-            "Task list tracking",
-            "Hideout station tracking",
+            { title: "Initial Release", description: [] },
+            { title: "Dashboard with item tracking", description: [] },
+            { title: "Task list tracking", description: [] },
+            { title: "Hideout station tracking", description: [] },
         ],
         ja: [
-            "初回リリース",
-            "アイテム追跡ダッシュボード",
-            "タスク一覧追跡",
-            "ハイドアウト施設追跡",
+            { title: "初回リリース", description: [] },
+            { title: "アイテム追跡ダッシュボード", description: [] },
+            { title: "タスク一覧追跡", description: [] },
+            { title: "ハイドアウト施設追跡", description: [] },
         ]
     },
     fixes: {
@@ -112,16 +151,28 @@ export default function ReleaseNotesPage() {
                         <CardContent className="space-y-4">
                             {note.features[isJa ? 'ja' : 'en'].length > 0 && (
                                 <div>
-                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                                    <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
                                         <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">
                                             {isJa ? "機能追加" : "Feature"}
                                         </Badge>
                                     </h4>
-                                    <ul className="list-disc list-outside ml-4 text-sm text-muted-foreground space-y-1">
+                                    <div className="space-y-4">
                                         {note.features[isJa ? 'ja' : 'en'].map((feat, i) => (
-                                            <li key={i}>{feat}</li>
+                                            <div key={i} className="space-y-1">
+                                                <div className="font-medium text-sm leading-none flex items-start gap-2">
+                                                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                                                    <span className="leading-5">{feat.title}</span>
+                                                </div>
+                                                {feat.description.length > 0 && (
+                                                    <div className="pl-3.5 text-xs text-muted-foreground space-y-1">
+                                                        {feat.description.map((desc, j) => (
+                                                            <p key={j}>{desc}</p>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         ))}
-                                    </ul>
+                                    </div>
                                 </div>
                             )}
 
