@@ -19,7 +19,7 @@ export interface ItemRequirement {
 export interface AggregatedItem {
   id: string;
   item: {
-    id:string;
+    id: string;
     name: string;
     nameEn?: string;
     shortName: string;
@@ -64,6 +64,7 @@ export function useTarkovData(
   const { aggregatedItems, relevantTasks } = useMemo(() => {
     const itemMap = new Map<string, AggregatedItem>();
 
+    // Filter tasks and their objectives to ONLY include 'giveItem' requirements.
     const relevantTasks = tasksQuery.data
       ?.map(task => ({
         ...task,
@@ -72,9 +73,12 @@ export function useTarkovData(
       .filter(task => task.objectives.length > 0) || [];
 
     if (relevantTasks && hideoutQuery.data) {
+      // Process Tasks from the cleaned list
       relevantTasks.forEach(task => {
+        // Check completion based on includeCompleted flag
         const isCompleted = completedTaskIds.has(task.id);
         if (!includeCompleted && isCompleted) return;
+
         task.objectives.forEach(obj => {
           const itemId = obj.item!.id;
           if (!itemMap.has(itemId)) {
@@ -90,56 +94,82 @@ export function useTarkovData(
             });
           }
           const entry = itemMap.get(itemId)!;
-          entry.requirements.push({
-            id: obj.item!.id,
-            name: obj.item!.name,
-            shortName: obj.item!.shortName,
-            image512pxLink: obj.item!.image512pxLink || "",
-            count: obj.count!,
-            sourceType: 'task',
-            sourceName: `${task.trader.name} - ${task.name}`,
-            taskId: task.id
-          });
+
+          // Check for existing requirement to merge (Deduplication Logic)
+          const existingReq = entry.requirements.find(r =>
+              r.sourceType === 'task' && r.taskId === task.id
+          );
+
+          if (existingReq) {
+              existingReq.count += obj.count!;
+          } else {
+              entry.requirements.push({
+                id: obj.item!.id,
+                name: obj.item!.name,
+                shortName: obj.item!.shortName,
+                image512pxLink: obj.item!.image512pxLink || "",
+                count: obj.count!,
+                sourceType: 'task',
+                sourceName: `${task.trader.name} - ${task.name}`,
+                taskId: task.id
+              });
+          }
         });
       });
 
+      // Process Hideout
       hideoutQuery.data.forEach(station => {
         station.levels.forEach(level => {
           const levelKey = `${station.id}-${level.level}`;
           const isCompleted = completedHideoutLevels.has(levelKey);
           if (!includeCompleted && isCompleted) return;
+
           level.itemRequirements.forEach(req => {
-            const itemId = req.item.id;
-            if (!itemMap.has(itemId)) {
-              itemMap.set(itemId, {
-                id: itemId,
-                item: {
-                  ...req.item,
-                  image512pxLink: req.item.image512pxLink || "",
-                  nameEn: englishNameMap.get(itemId) || req.item.name
-                },
-                totalCount: 0,
-                requirements: []
-              });
-            }
-            const entry = itemMap.get(itemId)!;
-            entry.requirements.push({
-              id: req.item.id,
-              name: req.item.name,
-              shortName: req.item.shortName,
-              image512pxLink: req.item.image512pxLink || "",
-              count: req.count,
-              sourceType: 'hideout',
-              sourceName: `${station.name} Level ${level.level}`,
-              stationId: station.id,
-              level: level.level
-            });
+              const itemId = req.item.id;
+              if (!itemMap.has(itemId)) {
+                itemMap.set(itemId, {
+                  id: itemId,
+                  item: {
+                    ...req.item,
+                    image512pxLink: req.item.image512pxLink || "",
+                    nameEn: englishNameMap.get(itemId) || req.item.name
+                  },
+                  totalCount: 0,
+                  requirements: []
+                });
+              }
+              const entry = itemMap.get(itemId)!;
+
+              // Check for existing requirement to merge (Deduplication Logic)
+              const existingReq = entry.requirements.find(r =>
+                  r.sourceType === 'hideout' &&
+                  r.stationId === station.id &&
+                  r.level === level.level
+              );
+
+              if (existingReq) {
+                  existingReq.count += req.count;
+              } else {
+                  entry.requirements.push({
+                    id: req.item.id,
+                    name: req.item.name,
+                    shortName: req.item.shortName,
+                    image512pxLink: req.item.image512pxLink || "",
+                    count: req.count,
+                    sourceType: 'hideout',
+                    sourceName: `${station.name} Level ${level.level}`,
+                    stationId: station.id,
+                    level: level.level
+                  });
+              }
           });
         });
       });
 
+      // Recalculate totalCount based on merged requirements
+      // This ensures that totalCount matches exactly what the user sees in the requirements list.
       itemMap.forEach(entry => {
-        entry.totalCount = entry.requirements.reduce((sum, req) => sum + req.count, 0);
+          entry.totalCount = entry.requirements.reduce((sum, req) => sum + req.count, 0);
       });
     }
 
@@ -148,7 +178,7 @@ export function useTarkovData(
   }, [tasksQuery.data, hideoutQuery.data, completedTaskIds, completedHideoutLevels, includeCompleted, englishNameMap]);
 
   return {
-    tasks: relevantTasks,
+    tasks: relevantTasks, // Return the filtered list of tasks
     hideout: hideoutQuery.data,
     aggregatedItems,
     isLoading,

@@ -79,6 +79,15 @@ export function Navbar() {
             >
               {t('hideout')}
             </Link>
+            <Link
+              href="/release-notes"
+              className={cn(
+                "transition-colors hover:text-foreground/80",
+                pathname === "/release-notes" ? "text-foreground" : "text-foreground/60"
+              )}
+            >
+              Release Notes
+            </Link>
           </nav>
 
           <div className="flex-1 flex items-center justify-end gap-4">
@@ -146,6 +155,15 @@ export function Navbar() {
                 )}
             >
                 {t('hideout')}
+            </Link>
+            <Link
+                href="/release-notes"
+                className={cn(
+                "text-lg font-medium transition-colors hover:text-primary",
+                pathname === "/release-notes" ? "text-foreground" : "text-muted-foreground"
+                )}
+            >
+                Release Notes
             </Link>
         </nav>
 
