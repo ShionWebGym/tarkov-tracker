@@ -102,25 +102,6 @@ export async function getTasks(lang: string = 'en'): Promise<Task[]> {
   }
 }
 
-const GET_ALL_ITEM_NAMES_QUERY = gql`
-  query GetAllItemNames($lang: LanguageCode) {
-    items(lang: $lang, limit: 10000) {
-      id
-      name
-    }
-  }
-`;
-
-export async function getAllItemEnglishNames(): Promise<Pick<Item, 'id' | 'name'>[]> {
-  try {
-    const data = await request<{ items: Pick<Item, 'id' | 'name'>[] }>(API_ENDPOINT, GET_ALL_ITEM_NAMES_QUERY, { lang: 'en' });
-    return data.items;
-  } catch (error) {
-    console.error('Error fetching all item names:', error);
-    return [];
-  }
-}
-
 export async function getHideoutStations(lang: string = 'en'): Promise<HideoutStation[]> {
   try {
     const data = await request<{ hideoutStations: HideoutStation[] }>(API_ENDPOINT, GET_HIDEOUT_QUERY, { lang });
