@@ -2,12 +2,13 @@
 
 import { useTarkovData, AggregatedItem } from "@/hooks/use-tarkov-data"
 import { ItemCard } from "@/components/item-card"
-import { Loader2, ArrowUpDown } from "lucide-react"
+import { Loader2, ArrowUpDown, Search } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { useUserProgress } from "@/context/user-progress-context"
 import { useLanguage } from "@/context/language-context"
 import { useState, useMemo, useEffect } from "react"
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -19,16 +20,20 @@ import {
 type SortOption = 'total-desc' | 'total-asc' | 'name-asc' | 'name-desc';
 
 export default function Dashboard() {
-  const { completedTaskIds, completedHideoutLevels, pinnedItemIds, togglePin } = useUserProgress()
+  const { completedTaskIds, completedHideoutLevels } = useUserProgress()
   const { language, t } = useLanguage()
   const { aggregatedItems, isLoading, error } = useTarkovData(language, completedTaskIds, completedHideoutLevels)
   const [sortBy, setSortBy] = useState<SortOption>('total-desc')
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    const saved = localStorage.getItem('dashboardSortBy') as SortOption
-    if (saved) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSortBy(saved)
+    const savedSort = localStorage.getItem('dashboardSortBy') as SortOption
+    if (savedSort) {
+        setSortBy(savedSort)
+    }
+    const savedQuery = localStorage.getItem('dashboardSearchQuery')
+    if (savedQuery) {
+        setSearchQuery(savedQuery)
     }
   }, [])
 
@@ -38,10 +43,26 @@ export default function Dashboard() {
     localStorage.setItem('dashboardSortBy', newSort);
   }
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setSearchQuery(val)
+    localStorage.setItem('dashboardSearchQuery', val)
+  }
+
   const sortedItems = useMemo(() => {
     if (!aggregatedItems) return [];
     
-    const sortFn = (a: AggregatedItem, b: AggregatedItem) => {
+    let items = [...aggregatedItems];
+
+    if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        items = items.filter(i =>
+            i.item.name.toLowerCase().includes(q) ||
+            (i.item.nameEn && i.item.nameEn.toLowerCase().includes(q))
+        );
+    }
+
+    return items.sort((a, b) => {
       switch (sortBy) {
         case 'total-desc':
           return b.totalCount - a.totalCount;
@@ -54,13 +75,8 @@ export default function Dashboard() {
         default:
           return 0;
       }
-    };
-
-    const pinned = aggregatedItems.filter(item => pinnedItemIds.has(item.id)).sort(sortFn);
-    const unpinned = aggregatedItems.filter(item => !pinnedItemIds.has(item.id)).sort(sortFn);
-
-    return [...pinned, ...unpinned];
-  }, [aggregatedItems, sortBy, language, pinnedItemIds]);
+    });
+  }, [aggregatedItems, sortBy, language, searchQuery]);
 
   if (isLoading) {
     return (
@@ -105,9 +121,19 @@ export default function Dashboard() {
                 </p>
             </div>
             
-             <div className="flex items-center gap-2 pt-4">
+             <div className="flex w-full max-w-sm items-center gap-2 pt-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        placeholder={language === 'ja' ? '検索...' : 'Search...'}
+                        className="pl-8 bg-background"
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                    />
+                </div>
                 <Select value={sortBy} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[160px] sm:w-[180px]">
                     <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
@@ -123,12 +149,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 place-content-center">
           {sortedItems.map((item) => (
-            <ItemCard
-                key={item.id}
-                item={item}
-                isPinned={pinnedItemIds.has(item.id)}
-                onPinToggle={() => togglePin(item.id)}
-            />
+            <ItemCard key={item.id} item={item} />
           ))}
         </div>
         
