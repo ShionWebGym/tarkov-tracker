@@ -35,6 +35,7 @@ const translations: Translations = {
     noAccount: "Don't have an account? Sign Up",
     checkEmail: "Check your email for the confirmation link!",
     successSignIn: "Successfully signed in!",
+    searchItems: "Search items...",
   },
   ja: {
     dashboard: "ダッシュボード",
@@ -60,6 +61,7 @@ const translations: Translations = {
     noAccount: "アカウントをお持ちではありませんか？サインアップ",
     checkEmail: "確認リンクをメールで送信しました！",
     successSignIn: "ログインに成功しました！",
+    searchItems: "アイテムを検索...",
   }
 };
 

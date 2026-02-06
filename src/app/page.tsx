@@ -2,7 +2,7 @@
 
 import { useTarkovData, AggregatedItem } from "@/hooks/use-tarkov-data"
 import { ItemCard } from "@/components/item-card"
-import { Loader2, ArrowUpDown } from "lucide-react"
+import { Loader2, ArrowUpDown, Search } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { useUserProgress } from "@/context/user-progress-context"
 import { useLanguage } from "@/context/language-context"
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 
 type SortOption = 'total-desc' | 'total-asc' | 'name-asc' | 'name-desc';
 
@@ -23,12 +24,18 @@ export default function Dashboard() {
   const { language, t } = useLanguage()
   const { aggregatedItems, isLoading, error } = useTarkovData(language, completedTaskIds, completedHideoutLevels)
   const [sortBy, setSortBy] = useState<SortOption>('total-desc')
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     const saved = localStorage.getItem('dashboardSortBy') as SortOption
     if (saved) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setSortBy(saved)
+    }
+    const savedSearch = localStorage.getItem('dashboardSearchQuery')
+    if (savedSearch) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSearchQuery(savedSearch)
     }
   }, [])
 
@@ -38,8 +45,24 @@ export default function Dashboard() {
     localStorage.setItem('dashboardSortBy', newSort);
   }
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    localStorage.setItem('dashboardSearchQuery', val);
+  }
+
   const sortedItems = useMemo(() => {
     if (!aggregatedItems) return [];
+
+    let items = aggregatedItems;
+
+    if (searchQuery) {
+        const lowerQuery = searchQuery.toLowerCase();
+        items = items.filter(i =>
+            i.item.name.toLowerCase().includes(lowerQuery) ||
+            (i.item.nameEn && i.item.nameEn.toLowerCase().includes(lowerQuery))
+        );
+    }
     
     const sortFn = (a: AggregatedItem, b: AggregatedItem) => {
       switch (sortBy) {
@@ -56,11 +79,11 @@ export default function Dashboard() {
       }
     };
 
-    const pinned = aggregatedItems.filter(item => pinnedItemIds.has(item.id)).sort(sortFn);
-    const unpinned = aggregatedItems.filter(item => !pinnedItemIds.has(item.id)).sort(sortFn);
+    const pinned = items.filter(item => pinnedItemIds.has(item.id)).sort(sortFn);
+    const unpinned = items.filter(item => !pinnedItemIds.has(item.id)).sort(sortFn);
 
     return [...pinned, ...unpinned];
-  }, [aggregatedItems, sortBy, language, pinnedItemIds]);
+  }, [aggregatedItems, sortBy, language, pinnedItemIds, searchQuery]);
 
   if (isLoading) {
     return (
@@ -105,9 +128,18 @@ export default function Dashboard() {
                 </p>
             </div>
             
-             <div className="flex items-center gap-2 pt-4">
+             <div className="flex items-center gap-2 pt-4 w-full max-w-md mx-auto">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder={t('searchItems')}
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        className="pl-8"
+                    />
+                </div>
                 <Select value={sortBy} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[130px] sm:w-[180px]">
                     <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
