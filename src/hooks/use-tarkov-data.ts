@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getTasks, getHideoutStations } from '@/lib/tarkov-api';
+import { getTasks, getHideoutStations, getAllItemEnglishNames } from '@/lib/tarkov-api';
 
 export interface ItemRequirement {
   id: string; // Item ID
@@ -21,6 +21,7 @@ export interface AggregatedItem {
   item: {
     id:string;
     name: string;
+    nameEn?: string;
     shortName: string;
     image512pxLink: string;
   };
@@ -46,8 +47,19 @@ export function useTarkovData(
     staleTime: 1000 * 60 * 60, // 1 hour
   });
 
-  const isLoading = tasksQuery.isLoading || hideoutQuery.isLoading;
-  const error = tasksQuery.error || hideoutQuery.error;
+  const englishNamesQuery = useQuery({
+    queryKey: ['itemEnglishNames'],
+    queryFn: () => getAllItemEnglishNames(),
+    staleTime: Infinity,
+  });
+
+  const isLoading = tasksQuery.isLoading || hideoutQuery.isLoading || englishNamesQuery.isLoading;
+  const error = tasksQuery.error || hideoutQuery.error || englishNamesQuery.error;
+
+  const englishNameMap = useMemo(() => {
+    if (!englishNamesQuery.data) return new Map<string, string>();
+    return new Map(englishNamesQuery.data.map(i => [i.id, i.name]));
+  }, [englishNamesQuery.data]);
 
   const { aggregatedItems, relevantTasks } = useMemo(() => {
     const itemMap = new Map<string, AggregatedItem>();
@@ -60,9 +72,7 @@ export function useTarkovData(
       .filter(task => task.objectives.length > 0) || [];
 
     if (relevantTasks && hideoutQuery.data) {
-      // ... processing logic
       relevantTasks.forEach(task => {
-        // ...
         const isCompleted = completedTaskIds.has(task.id);
         if (!includeCompleted && isCompleted) return;
         task.objectives.forEach(obj => {
@@ -70,7 +80,11 @@ export function useTarkovData(
           if (!itemMap.has(itemId)) {
             itemMap.set(itemId, {
               id: itemId,
-              item: { ...obj.item!, image512pxLink: obj.item!.image512pxLink || "" },
+              item: {
+                ...obj.item!,
+                image512pxLink: obj.item!.image512pxLink || "",
+                nameEn: englishNameMap.get(itemId) || obj.item!.name
+              },
               totalCount: 0,
               requirements: []
             });
@@ -99,7 +113,11 @@ export function useTarkovData(
             if (!itemMap.has(itemId)) {
               itemMap.set(itemId, {
                 id: itemId,
-                item: { ...req.item, image512pxLink: req.item.image512pxLink || "" },
+                item: {
+                  ...req.item,
+                  image512pxLink: req.item.image512pxLink || "",
+                  nameEn: englishNameMap.get(itemId) || req.item.name
+                },
                 totalCount: 0,
                 requirements: []
               });
@@ -127,7 +145,7 @@ export function useTarkovData(
 
     const aggregatedItems = Array.from(itemMap.values()).sort((a, b) => b.totalCount - a.totalCount);
     return { aggregatedItems, relevantTasks };
-  }, [tasksQuery.data, hideoutQuery.data, completedTaskIds, completedHideoutLevels, includeCompleted]);
+  }, [tasksQuery.data, hideoutQuery.data, completedTaskIds, completedHideoutLevels, includeCompleted, englishNameMap]);
 
   return {
     tasks: relevantTasks,
