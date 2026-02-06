@@ -52,16 +52,6 @@ export default function Dashboard() {
   const sortedItems = useMemo(() => {
     if (!aggregatedItems) return [];
     
-    let items = [...aggregatedItems];
-
-    if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        items = items.filter(i =>
-            i.item.name.toLowerCase().includes(q) ||
-            (i.item.nameEn && i.item.nameEn.toLowerCase().includes(q))
-        );
-    }
-
     const sortFn = (a: AggregatedItem, b: AggregatedItem) => {
       switch (sortBy) {
         case 'total-desc':
@@ -77,11 +67,11 @@ export default function Dashboard() {
       }
     };
 
-    const pinned = items.filter(item => pinnedItemIds.has(item.id)).sort(sortFn);
-    const unpinned = items.filter(item => !pinnedItemIds.has(item.id)).sort(sortFn);
+    const pinned = aggregatedItems.filter(item => pinnedItemIds.has(item.id)).sort(sortFn);
+    const unpinned = aggregatedItems.filter(item => !pinnedItemIds.has(item.id)).sort(sortFn);
 
     return [...pinned, ...unpinned];
-  }, [aggregatedItems, sortBy, language, searchQuery, pinnedItemIds]);
+  }, [aggregatedItems, sortBy, language, pinnedItemIds]);
 
   if (isLoading) {
     return (
