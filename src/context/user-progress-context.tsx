@@ -113,14 +113,7 @@ export function UserProgressProvider({ children }: { children: React.ReactNode }
   };
 
   return (
-    <UserProgressContext.Provider value={{
-        completedTaskIds,
-        completedHideoutLevels,
-        pinnedItemIds,
-        toggleTask,
-        toggleHideout,
-        togglePin
-    }}>
+    <UserProgressContext.Provider value={{ completedTaskIds, completedHideoutLevels, pinnedItemIds, toggleTask, toggleHideout, togglePin }}>
       {children}
     </UserProgressContext.Provider>
   );
