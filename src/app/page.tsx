@@ -2,12 +2,13 @@
 
 import { useTarkovData, AggregatedItem } from "@/hooks/use-tarkov-data"
 import { ItemCard } from "@/components/item-card"
-import { Loader2, ArrowUpDown } from "lucide-react"
+import { Loader2, ArrowUpDown, Search } from "lucide-react"
 import { Navbar } from "@/components/navbar"
 import { useUserProgress } from "@/context/user-progress-context"
 import { useLanguage } from "@/context/language-context"
 import { useState, useMemo, useEffect } from "react"
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -23,12 +24,18 @@ export default function Dashboard() {
   const { language, t } = useLanguage()
   const { aggregatedItems, isLoading, error } = useTarkovData(language, completedTaskIds, completedHideoutLevels)
   const [sortBy, setSortBy] = useState<SortOption>('total-desc')
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    const saved = localStorage.getItem('dashboardSortBy') as SortOption
-    if (saved) {
+    const savedSort = localStorage.getItem('dashboardSortBy') as SortOption
+    if (savedSort) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSortBy(saved)
+        setSortBy(savedSort)
+    }
+    const savedQuery = localStorage.getItem('dashboardSearchQuery')
+    if (savedQuery) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSearchQuery(savedQuery)
     }
   }, [])
 
@@ -38,9 +45,26 @@ export default function Dashboard() {
     localStorage.setItem('dashboardSortBy', newSort);
   }
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setSearchQuery(val)
+    localStorage.setItem('dashboardSearchQuery', val)
+  }
+
   const sortedItems = useMemo(() => {
     if (!aggregatedItems) return [];
     
+    // 1. Filter by Search Query
+    let filteredItems = [...aggregatedItems];
+    if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filteredItems = filteredItems.filter(i =>
+            i.item.name.toLowerCase().includes(q) ||
+            (i.item.nameEn && i.item.nameEn.toLowerCase().includes(q))
+        );
+    }
+
+    // 2. Define Sort Function
     const sortFn = (a: AggregatedItem, b: AggregatedItem) => {
       switch (sortBy) {
         case 'total-desc':
@@ -56,11 +80,13 @@ export default function Dashboard() {
       }
     };
 
-    const pinned = aggregatedItems.filter(item => pinnedItemIds.has(item.id)).sort(sortFn);
-    const unpinned = aggregatedItems.filter(item => !pinnedItemIds.has(item.id)).sort(sortFn);
+    // 3. Separate Pinned and Unpinned items
+    const pinned = filteredItems.filter(item => pinnedItemIds.has(item.id)).sort(sortFn);
+    const unpinned = filteredItems.filter(item => !pinnedItemIds.has(item.id)).sort(sortFn);
 
+    // 4. Concatenate with Pinned items first
     return [...pinned, ...unpinned];
-  }, [aggregatedItems, sortBy, language, pinnedItemIds]);
+  }, [aggregatedItems, sortBy, language, pinnedItemIds, searchQuery]);
 
   if (isLoading) {
     return (
@@ -105,9 +131,19 @@ export default function Dashboard() {
                 </p>
             </div>
             
-             <div className="flex items-center gap-2 pt-4">
+             <div className="flex w-full max-w-sm items-center gap-2 pt-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        placeholder={language === 'ja' ? '検索...' : 'Search...'}
+                        className="pl-8 bg-background"
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                    />
+                </div>
                 <Select value={sortBy} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[160px] sm:w-[180px]">
                     <ArrowUpDown className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
