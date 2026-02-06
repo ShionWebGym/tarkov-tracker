@@ -20,7 +20,7 @@ import {
 type SortOption = 'total-desc' | 'total-asc' | 'name-asc' | 'name-desc';
 
 export default function Dashboard() {
-  const { completedTaskIds, completedHideoutLevels, pinnedItemIds, togglePin } = useUserProgress()
+  const { completedTaskIds, completedHideoutLevels } = useUserProgress()
   const { language, t } = useLanguage()
   const { aggregatedItems, isLoading, error } = useTarkovData(language, completedTaskIds, completedHideoutLevels)
   const [sortBy, setSortBy] = useState<SortOption>('total-desc')
@@ -59,6 +59,11 @@ export default function Dashboard() {
     if (searchQuery) {
         const q = searchQuery.toLowerCase();
         filteredItems = filteredItems.filter(i =>
+    let items = [...aggregatedItems];
+
+    if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        items = items.filter(i =>
             i.item.name.toLowerCase().includes(q) ||
             (i.item.nameEn && i.item.nameEn.toLowerCase().includes(q))
         );
@@ -66,6 +71,7 @@ export default function Dashboard() {
 
     // 2. Define Sort Function
     const sortFn = (a: AggregatedItem, b: AggregatedItem) => {
+    return items.sort((a, b) => {
       switch (sortBy) {
         case 'total-desc':
           return b.totalCount - a.totalCount;
@@ -87,6 +93,8 @@ export default function Dashboard() {
     // 4. Concatenate with Pinned items first
     return [...pinned, ...unpinned];
   }, [aggregatedItems, sortBy, language, pinnedItemIds, searchQuery]);
+    });
+  }, [aggregatedItems, sortBy, language, searchQuery]);
 
   if (isLoading) {
     return (
@@ -159,12 +167,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 place-content-center">
           {sortedItems.map((item) => (
-            <ItemCard
-                key={item.id}
-                item={item}
-                isPinned={pinnedItemIds.has(item.id)}
-                onPinToggle={() => togglePin(item.id)}
-            />
+            <ItemCard key={item.id} item={item} />
           ))}
         </div>
         
