@@ -5,8 +5,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface UserProgressContextType {
   completedTaskIds: Set<string>;
   completedHideoutLevels: Set<string>;
+  pinnedItemIds: Set<string>;
   toggleTask: (taskId: string, completed: boolean) => void;
   toggleHideout: (stationId: string, level: number, completed: boolean) => void;
+  togglePin: (itemId: string) => void;
 }
 
 const UserProgressContext = createContext<UserProgressContextType | undefined>(undefined);
@@ -14,6 +16,7 @@ const UserProgressContext = createContext<UserProgressContextType | undefined>(u
 export function UserProgressProvider({ children }: { children: React.ReactNode }) {
   const [completedTaskIds, setCompletedTaskIds] = useState<Set<string>>(new Set());
   const [completedHideoutLevels, setCompletedHideoutLevels] = useState<Set<string>>(new Set());
+  const [pinnedItemIds, setPinnedItemIds] = useState<Set<string>>(new Set());
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load from local storage on mount
@@ -22,6 +25,7 @@ export function UserProgressProvider({ children }: { children: React.ReactNode }
       try {
         const tasks = localStorage.getItem('completedTasks');
         const hideout = localStorage.getItem('completedHideout');
+        const pinned = localStorage.getItem('pinnedItems');
         
         if (tasks) {
             setCompletedTaskIds(new Set(JSON.parse(tasks)));
@@ -29,6 +33,10 @@ export function UserProgressProvider({ children }: { children: React.ReactNode }
 
         if (hideout) {
             setCompletedHideoutLevels(new Set(JSON.parse(hideout)));
+        }
+
+        if (pinned) {
+            setPinnedItemIds(new Set(JSON.parse(pinned)));
         }
       } catch (e) {
         console.error("Failed to load progress from local storage", e);
@@ -50,6 +58,11 @@ export function UserProgressProvider({ children }: { children: React.ReactNode }
     if (!isLoaded) return;
     localStorage.setItem('completedHideout', JSON.stringify(Array.from(completedHideoutLevels)));
   }, [completedHideoutLevels, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    localStorage.setItem('pinnedItems', JSON.stringify(Array.from(pinnedItemIds)));
+  }, [pinnedItemIds, isLoaded]);
 
   const toggleTask = (taskId: string, completed: boolean) => {
     setCompletedTaskIds(prev => {
@@ -87,8 +100,27 @@ export function UserProgressProvider({ children }: { children: React.ReactNode }
     });
   };
 
+  const togglePin = (itemId: string) => {
+    setPinnedItemIds(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(itemId)) {
+            newSet.delete(itemId);
+        } else {
+            newSet.add(itemId);
+        }
+        return newSet;
+    });
+  };
+
   return (
-    <UserProgressContext.Provider value={{ completedTaskIds, completedHideoutLevels, toggleTask, toggleHideout }}>
+    <UserProgressContext.Provider value={{
+        completedTaskIds,
+        completedHideoutLevels,
+        pinnedItemIds,
+        toggleTask,
+        toggleHideout,
+        togglePin
+    }}>
       {children}
     </UserProgressContext.Provider>
   );

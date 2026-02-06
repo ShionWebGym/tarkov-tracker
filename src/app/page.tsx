@@ -1,6 +1,6 @@
 'use client'
 
-import { useTarkovData } from "@/hooks/use-tarkov-data"
+import { useTarkovData, AggregatedItem } from "@/hooks/use-tarkov-data"
 import { ItemCard } from "@/components/item-card"
 import { Loader2, ArrowUpDown, Search } from "lucide-react"
 import { Navbar } from "@/components/navbar"
@@ -20,7 +20,7 @@ import {
 type SortOption = 'total-desc' | 'total-asc' | 'name-asc' | 'name-desc';
 
 export default function Dashboard() {
-  const { completedTaskIds, completedHideoutLevels } = useUserProgress()
+  const { completedTaskIds, completedHideoutLevels, pinnedItemIds, togglePin } = useUserProgress()
   const { language, t } = useLanguage()
   const { aggregatedItems, isLoading, error } = useTarkovData(language, completedTaskIds, completedHideoutLevels)
   const [sortBy, setSortBy] = useState<SortOption>('total-desc')
@@ -62,7 +62,7 @@ export default function Dashboard() {
         );
     }
 
-    return items.sort((a, b) => {
+    const sortFn = (a: AggregatedItem, b: AggregatedItem) => {
       switch (sortBy) {
         case 'total-desc':
           return b.totalCount - a.totalCount;
@@ -75,8 +75,13 @@ export default function Dashboard() {
         default:
           return 0;
       }
-    });
-  }, [aggregatedItems, sortBy, language, searchQuery]);
+    };
+
+    const pinned = items.filter(item => pinnedItemIds.has(item.id)).sort(sortFn);
+    const unpinned = items.filter(item => !pinnedItemIds.has(item.id)).sort(sortFn);
+
+    return [...pinned, ...unpinned];
+  }, [aggregatedItems, sortBy, language, searchQuery, pinnedItemIds]);
 
   if (isLoading) {
     return (
@@ -149,7 +154,12 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 place-content-center">
           {sortedItems.map((item) => (
-            <ItemCard key={item.id} item={item} />
+            <ItemCard
+                key={item.id}
+                item={item}
+                isPinned={pinnedItemIds.has(item.id)}
+                onPinToggle={() => togglePin(item.id)}
+            />
           ))}
         </div>
         
