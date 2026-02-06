@@ -39,6 +39,9 @@ export const metadata: Metadata = {
     description: "Track your Escape from Tarkov item requirements for tasks and hideout. タルコフのタスクやハイドアウトに必要なアイテム数（必要数）を管理・追跡できるツールです。",
     images: ["/api/og"],
   },
+  verification: {
+    google: "024AEIsaKUndRijzqUHr3GBpMSSpdhQOpZmRaT-1XJg",
+  },
 };
 
 export default function RootLayout({
