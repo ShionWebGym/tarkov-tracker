@@ -87,12 +87,17 @@ export function UserProgressProvider({ children }: { children: React.ReactNode }
             }
         } else {
             // Uncheck current level and all higher levels
-            const stationLevels = Array.from(newSet).filter(key => key.startsWith(`${stationId}-`));
-            for (const key of stationLevels) {
-                const levelStr = key.substring(stationId.length + 1);
-                const l = parseInt(levelStr, 10);
-                if (!isNaN(l) && l >= level) {
-                    newSet.delete(key);
+            // We iterate through the set to find higher levels for this station
+            // This is safer than assuming max level
+            for (const key of Array.from(newSet)) {
+                if (key.startsWith(`${stationId}-`)) {
+                    // Extract level from key "stationId-level"
+                    const levelStr = key.substring(stationId.length + 1);
+                    const l = parseInt(levelStr, 10);
+
+                    if (!isNaN(l) && l >= level) {
+                        newSet.delete(key);
+                    }
                 }
             }
         }
