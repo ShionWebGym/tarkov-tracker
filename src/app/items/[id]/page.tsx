@@ -144,29 +144,19 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
                             <CardContent className="p-0">
                                 <ScrollArea className="h-full max-h-[400px]">
                                     <div className="divide-y">
-                                        {Object.values(itemData.requirements
-                                            .filter(r => r.sourceType === 'task')
-                                            .reduce((acc, req) => {
-                                                if (!req.taskId) return acc;
-                                                if (!acc[req.taskId]) {
-                                                    acc[req.taskId] = { ...req, count: 0 };
-                                                }
-                                                acc[req.taskId].count += req.count;
-                                                return acc;
-                                            }, {} as Record<string, typeof itemData.requirements[0]>))
-                                            .map((req) => {
+                                        {itemData.requirements.filter(r => r.sourceType === 'task').map((req, idx) => {
                                              const isCompleted = req.taskId ? completedTaskIds.has(req.taskId) : false;
                                              return (
-                                                <div key={req.taskId} className="flex items-center p-4 hover:bg-muted/50 transition-colors">
+                                                <div key={idx} className="flex items-center p-4 hover:bg-muted/50 transition-colors">
                                                      <Checkbox 
-                                                        id={`task-${req.taskId}`} 
+                                                        id={`task-${idx}`}
                                                         checked={isCompleted}
                                                         onCheckedChange={(checked) => req.taskId && toggleTask(req.taskId, checked as boolean)}
                                                         className="mt-0.5"
                                                     />
                                                     <div className="ml-4 flex-1">
                                                         <Label 
-                                                            htmlFor={`task-${req.taskId}`} 
+                                                            htmlFor={`task-${idx}`}
                                                             className={`text-base font-medium cursor-pointer block ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
                                                         >
                                                             {req.sourceName}
@@ -199,38 +189,40 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
                         </h3>
                         <Card>
                             <CardContent className="p-0">
-                                <div className="divide-y">
-                                    {itemData.requirements.filter(r => r.sourceType === 'hideout').map((req, idx) => {
-                                        const key = `${req.stationId}-${req.level}-${idx}`;
-                                        const isCompleted = req.stationId && req.level ? completedHideoutLevels.has(`${req.stationId}-${req.level}`) : false;
-                                        return (
-                                            <div key={key} className="flex items-center p-4 hover:bg-muted/50 transition-colors">
-                                                <Checkbox
-                                                    id={`hideout-${key}`}
-                                                    checked={isCompleted}
-                                                    onCheckedChange={(checked) => req.stationId && req.level && toggleHideout(req.stationId, req.level, checked as boolean)}
-                                                    className="mt-0.5"
-                                                />
-                                                <div className="ml-4 flex-1">
-                                                    <Label
-                                                        htmlFor={`hideout-${key}`}
-                                                        className={`text-base font-medium cursor-pointer block ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
-                                                    >
-                                                        {req.sourceName}
-                                                    </Label>
+                                <ScrollArea className="h-full max-h-[400px]">
+                                     <div className="divide-y">
+                                        {itemData.requirements.filter(r => r.sourceType === 'hideout').map((req, idx) => {
+                                             const key = `${req.stationId}-${req.level}`;
+                                             const isCompleted = completedHideoutLevels.has(key);
+                                             return (
+                                                <div key={idx} className="flex items-center p-4 hover:bg-muted/50 transition-colors">
+                                                     <Checkbox
+                                                        id={`hideout-${idx}`}
+                                                        checked={isCompleted}
+                                                        onCheckedChange={(checked) => req.stationId && req.level && toggleHideout(req.stationId, req.level, checked as boolean)}
+                                                        className="mt-0.5"
+                                                    />
+                                                    <div className="ml-4 flex-1">
+                                                        <Label
+                                                            htmlFor={`hideout-${idx}`}
+                                                            className={`text-base font-medium cursor-pointer block ${isCompleted ? 'line-through text-muted-foreground' : ''}`}
+                                                        >
+                                                            {req.sourceName}
+                                                        </Label>
+                                                    </div>
+                                                    <Badge variant="outline" className="ml-auto font-mono">
+                                                        x{req.count}
+                                                    </Badge>
                                                 </div>
-                                                <Badge variant="outline" className="ml-auto font-mono">
-                                                    x{req.count}
-                                                </Badge>
+                                             )
+                                        })}
+                                         {itemData.requirements.filter(r => r.sourceType === 'hideout').length === 0 && (
+                                            <div className="p-8 text-center text-muted-foreground text-sm">
+                                                No hideout upgrades require this item.
                                             </div>
-                                        );
-                                    })}
-                                    {itemData.requirements.filter(r => r.sourceType === 'hideout').length === 0 && (
-                                        <div className="p-8 text-center text-muted-foreground text-sm">
-                                            No hideout upgrades require this item.
-                                        </div>
-                                    )}
-                                </div>
+                                        )}
+                                    </div>
+                                </ScrollArea>
                             </CardContent>
                         </Card>
                     </div>
