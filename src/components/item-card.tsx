@@ -28,7 +28,7 @@ export function ItemCard({ item, isPinned, onPinToggle }: ItemCardProps) {
                 "absolute top-2 left-2 z-20 p-1.5 rounded-full transition-all duration-200",
                 isPinned
                     ? "bg-blue-500 text-white hover:bg-blue-600 opacity-100 shadow-sm"
-                    : "bg-muted/80 text-muted-foreground hover:bg-primary hover:text-primary-foreground opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0"
+                    : "bg-muted/80 text-muted-foreground hover:bg-primary hover:text-primary-foreground opacity-50 hover:opacity-100"
             )}
             title={isPinned ? "Unpin item" : "Pin item"}
         >
