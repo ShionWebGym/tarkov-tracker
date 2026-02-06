@@ -8,50 +8,87 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 interface ReleaseNote {
   date: string;
   version: string;
-  features: string[];
-  fixes: string[];
+  features: {
+      en: string[];
+      ja: string[];
+  };
+  fixes: {
+      en: string[];
+      ja: string[];
+  };
 }
 
 const releaseNotes: ReleaseNote[] = [
   {
     date: "2026.02.06",
     version: "v1.1.0",
-    features: [
-      "Added Release Notes page",
-      "Implemented Hideout cascading checks",
-      "Overhauled mobile navigation",
-    ],
-    fixes: [
-      "Fixed item count logic for Wires",
-      "Fixed data inconsistency between pages",
-      "Fixed mobile layout overflow issues",
-    ],
+    features: {
+        en: [
+            "Added Release Notes page",
+            "Implemented Hideout cascading checks",
+            "Overhauled mobile navigation",
+        ],
+        ja: [
+            "リリースノートページを追加",
+            "ハイドアウトレベルの連動チェック機能を実装",
+            "モバイルナビゲーションを刷新",
+        ]
+    },
+    fixes: {
+        en: [
+            "Fixed item count logic for Wires",
+            "Fixed data inconsistency between pages",
+            "Fixed mobile layout overflow issues",
+        ],
+        ja: [
+            "Wiresなどのアイテム必要数計算ロジックを修正",
+            "ページ間のデータ不整合を修正",
+            "モバイルレイアウトの表示崩れを修正",
+        ]
+    },
   },
   {
-    date: "2024.01.20",
+    date: "2026.01.26",
     version: "v1.0.0",
-    features: [
-      "Initial Release",
-      "Dashboard with item tracking",
-      "Task list tracking",
-      "Hideout station tracking",
-    ],
-    fixes: [],
+    features: {
+        en: [
+            "Initial Release",
+            "Dashboard with item tracking",
+            "Task list tracking",
+            "Hideout station tracking",
+        ],
+        ja: [
+            "初回リリース",
+            "アイテム追跡ダッシュボード",
+            "タスク一覧追跡",
+            "ハイドアウト施設追跡",
+        ]
+    },
+    fixes: {
+        en: [],
+        ja: []
+    },
   }
 ];
 
 export default function ReleaseNotesPage() {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { t } = useLanguage()
+  const { language } = useLanguage()
+
+  const isJa = language === 'ja';
 
   return (
     <div className="flex flex-col min-h-screen bg-muted/20">
       <Navbar />
       <main className="container mx-auto max-w-3xl py-8 px-4 sm:px-6 space-y-8">
         <div className="flex flex-col items-center text-center space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">Release Notes</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+                {isJa ? "リリースノート" : "Release Notes"}
+            </h1>
             <p className="text-muted-foreground">
-                Stay up to date with the latest changes and improvements.
+                {isJa
+                    ? "最新の変更点や改善情報をお届けします。"
+                    : "Stay up to date with the latest changes and improvements."
+                }
             </p>
         </div>
 
@@ -73,26 +110,30 @@ export default function ReleaseNotesPage() {
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {note.features.length > 0 && (
+                            {note.features[isJa ? 'ja' : 'en'].length > 0 && (
                                 <div>
                                     <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                                        <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">Feature</Badge>
+                                        <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">
+                                            {isJa ? "機能追加" : "Feature"}
+                                        </Badge>
                                     </h4>
                                     <ul className="list-disc list-outside ml-4 text-sm text-muted-foreground space-y-1">
-                                        {note.features.map((feat, i) => (
+                                        {note.features[isJa ? 'ja' : 'en'].map((feat, i) => (
                                             <li key={i}>{feat}</li>
                                         ))}
                                     </ul>
                                 </div>
                             )}
 
-                            {note.fixes.length > 0 && (
+                            {note.fixes[isJa ? 'ja' : 'en'].length > 0 && (
                                 <div>
                                     <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                                        <Badge variant="destructive">Fix</Badge>
+                                        <Badge variant="destructive">
+                                            {isJa ? "修正" : "Fix"}
+                                        </Badge>
                                     </h4>
                                     <ul className="list-disc list-outside ml-4 text-sm text-muted-foreground space-y-1">
-                                        {note.fixes.map((fix, i) => (
+                                        {note.fixes[isJa ? 'ja' : 'en'].map((fix, i) => (
                                             <li key={i}>{fix}</li>
                                         ))}
                                     </ul>
